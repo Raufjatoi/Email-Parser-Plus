@@ -6,7 +6,7 @@ import { Upload, Mail, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import MoodToggle from "@/components/MoodToggle";
 import { analyzeEmailWithAI } from "@/utils/aiParsingService";
-import { connectToGmail, fetchRecentEmails, EmailMessage } from "@/lib/emailService";
+import { connectToGmail, connectToICloud, fetchRecentEmails, EmailMessage } from "@/lib/emailService";
 import { useLocation } from "react-router-dom";
 
 const EmailParser = () => {
@@ -20,6 +20,7 @@ const EmailParser = () => {
   const location = useLocation();
   const [isConnected, setIsConnected] = useState(false);
   const [isFetchingEmails, setIsFetchingEmails] = useState(false);
+  const [provider, setProvider] = useState<string>('');
 
   // Advanced email parser function that handles various email formats
   const parseEmail = (emailText: string) => {
@@ -271,36 +272,44 @@ The Amazon.com Team`;
   };
 
   // Add a function to handle email connection (placeholder for now)
-  const handleConnectEmail = async (provider: string) => {
-    if (provider === 'Gmail') {
-      // Use the real Gmail connection function
-      setIsLoading(true);
-      try {
-        const success = await connectToGmail();
-        if (!success) {
-          toast({
-            title: "Connection Failed",
-            description: "Failed to connect to Gmail. Please try again.",
-            variant: "destructive",
-          });
+  const handleConnectEmail = async (providerName: string) => {
+    setProvider(providerName);
+    setIsLoading(true);
+    try {
+      let success = false;
+      
+      if (providerName === 'Gmail') {
+        success = await connectToGmail();
+      } else if (providerName === 'MockMail') {
+        // Use the iCloud connection function but with our MockMail branding
+        success = await connectToICloud();
+        
+        if (success) {
+          // Update the provider name in localStorage to show MockMail instead of iCloud
+          localStorage.setItem('email_provider_name', 'MockMail');
+          
+          // Fetch the mock emails
+          await fetchEmails();
+          setIsConnected(true);
         }
-      } catch (error) {
-        console.error("Error connecting to Gmail:", error);
+      }
+      
+      if (!success) {
         toast({
-          title: "Connection Error",
-          description: "An error occurred while connecting to Gmail.",
+          title: "Connection Failed",
+          description: `Failed to connect to ${providerName}. Please try again.`,
           variant: "destructive",
         });
-      } finally {
-        setIsLoading(false);
       }
-    } else {
-      // This should not be reached since we're removing the Outlook button
+    } catch (error) {
+      console.error(`Error connecting to ${providerName}:`, error);
       toast({
-        title: `${provider} Connection`,
-        description: "This provider is not yet implemented.",
+        title: "Connection Error",
+        description: `An error occurred while connecting to ${providerName}.`,
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -320,24 +329,54 @@ The Amazon.com Team`;
       )
     );
     
-    // Simulate email content based on the subject
-    let emailContent = "";
-    if (emailToAnalyze.subject.includes("Amazon")) {
-      emailContent = handleShippingEmailSample();
-    } else if (emailToAnalyze.subject.includes("Meeting")) {
-      emailContent = handleSampleEmail();
-    } else {
-      emailContent = handleFacebookSampleEmail();
-    }
-    
-    // Set the email input to the content
-    setEmailInput(emailContent);
-    
-    // Perform AI analysis
     try {
-      const result = parseEmail(emailContent);
+      // Set the email input to the content
+      setEmailInput(emailToAnalyze.body);
+      
+      // Parse the email
+      const result = parseEmail(emailToAnalyze.body);
       setParsedResult(result);
-      await performAdvancedAnalysis(emailContent);
+      
+      // Perform AI analysis
+      const apiKey = import.meta.env.VITE_GROQ_API || "";
+      if (apiKey) {
+        const aiResult = await analyzeEmailWithAI(emailToAnalyze.body, apiKey);
+        setAiAnalysisResult(aiResult);
+      } else {
+        // If no API key, use the simulated AI analysis
+        const simulatedResult = {
+          contextualType: emailToAnalyze.subject.includes("Flight") ? "Travel Confirmation" :
+                          emailToAnalyze.subject.includes("Security") ? "Security Alert" :
+                          emailToAnalyze.subject.includes("Order") ? "Purchase Confirmation" :
+                          emailToAnalyze.subject.includes("Meeting") ? "Calendar Event" :
+                          emailToAnalyze.subject.includes("Invoice") ? "Financial Transaction" :
+                          "General Communication",
+          keyInsights: [
+            `Subject: ${emailToAnalyze.subject}`,
+            `From: ${emailToAnalyze.from}`,
+            `Date: ${new Date(emailToAnalyze.date).toLocaleString()}`,
+            emailToAnalyze.body.split('\n')[0]
+          ],
+          sentimentAnalysis: emailToAnalyze.important ? "Urgent" : "Neutral",
+          urgencyLevel: emailToAnalyze.important ? "High" : "Medium",
+          suggestedActions: [
+            emailToAnalyze.subject.includes("Flight") ? "Add to calendar" : 
+            emailToAnalyze.subject.includes("Security") ? "Reset password" :
+            emailToAnalyze.subject.includes("Order") ? "Track package" :
+            emailToAnalyze.subject.includes("Meeting") ? "Respond to invitation" :
+            emailToAnalyze.subject.includes("Invoice") ? "Review payment" :
+            "Archive email"
+          ],
+          entityRecognition: {
+            people: [],
+            organizations: [emailToAnalyze.from.split('<')[0].trim()],
+            dates: [new Date(emailToAnalyze.date).toLocaleDateString()],
+            locations: [],
+            other: []
+          }
+        };
+        setAiAnalysisResult(simulatedResult);
+      }
       
       // Mark the email as analyzed
       setConnectedEmails(prev => 
@@ -345,6 +384,11 @@ The Amazon.com Team`;
           email.id === emailId ? {...email, analyzing: false, analyzed: true} : email
         )
       );
+      
+      toast({
+        title: "Analysis Complete",
+        description: "Email has been analyzed successfully.",
+      });
     } catch (error) {
       console.error("Error analyzing email:", error);
       toast({
@@ -364,23 +408,25 @@ The Amazon.com Team`;
     }
   };
 
-  // Add this function to fetch Gmail emails
-  const fetchGmailEmails = async () => {
+  // Add this function to fetch emails
+  const fetchEmails = async () => {
     setIsFetchingEmails(true);
     try {
       const emails = await fetchRecentEmails(10);
       setConnectedEmails(emails);
       setIsConnected(true);
       
+      const providerName = localStorage.getItem('email_provider_name') || 'email';
+      
       toast({
         title: "Emails Retrieved",
-        description: `Successfully fetched ${emails.length} recent emails from your Gmail account.`,
+        description: `Successfully fetched ${emails.length} recent emails from your ${providerName} account.`,
       });
     } catch (error) {
       console.error("Error fetching emails:", error);
       toast({
         title: "Fetch Failed",
-        description: "Failed to retrieve emails. Please reconnect to Gmail.",
+        description: "Failed to retrieve emails. Please reconnect to your email provider.",
         variant: "destructive",
       });
     } finally {
@@ -395,7 +441,7 @@ The Amazon.com Team`;
         title: "Authentication Successful",
         description: "You've successfully connected to Gmail. Fetching your emails...",
       });
-      fetchGmailEmails();
+      fetchEmails();
     }
   }, [location]);
 
@@ -492,38 +538,72 @@ The Amazon.com Team`;
                   <p className="text-white/80 mb-6">Connect your email account to automatically retrieve and analyze your emails</p>
                 </div>
                 
-                <div className="grid grid-cols-1 gap-4">
-                  <Button 
-                    className="bg-white text-primary hover:bg-white/90 flex items-center justify-center gap-2 py-6"
-                    onClick={() => handleConnectEmail('Gmail')}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-                    )}
-                    Connect Gmail
-                  </Button>
-                </div>
-                
-                <div className="text-center mt-4">
-                  <p className="text-white/70 mb-4">Or analyze a single email</p>
-                  <Textarea
-                    className="min-h-[100px] resize-y bg-white/10 text-white border-white/20 focus:border-white placeholder:text-white/50 mb-4"
-                    placeholder="Paste email content here for AI analysis..."
-                    value={emailInput}
-                    onChange={(e) => setEmailInput(e.target.value)}
-                  />
-                  
-                  <Button 
-                    onClick={handleParseClick}
-                    className="hover-scale bg-white text-primary hover:bg-white/90"
-                    disabled={isLoading || !emailInput.trim()}
-                  >
-                    {isLoading ? "Analyzing with AI..." : "Analyze with AI"}
-                  </Button>
-                </div>
+                {!isConnected ? (
+                  <div className="flex flex-col sm:flex-row justify-center gap-4">
+                    <Button 
+                      className="bg-white text-primary hover:bg-white/90 flex items-center justify-center gap-2 py-6"
+                      onClick={() => handleConnectEmail('Gmail')}
+                      disabled={isLoading}
+                    >
+                      {isLoading && provider === 'Gmail' ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <Mail className="h-5 w-5" />
+                      )}
+                      Connect Gmail
+                    </Button>
+                    
+                    <Button 
+                      className="bg-white text-primary hover:bg-white/90 flex items-center justify-center gap-2 py-6"
+                      onClick={() => handleConnectEmail('MockMail')}
+                      disabled={isLoading}
+                    >
+                      {isLoading && provider === 'MockMail' ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/><path d="M12 8v4l3 3"/></svg>
+                      )}
+                      Connect MockMail
+                    </Button>
+                  </div>
+                ) : isFetchingEmails ? (
+                  <div className="text-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-white" />
+                    <p className="mt-4 text-white/80">Fetching your emails...</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-center mb-4">
+                      <p className="text-white/90">Your {localStorage.getItem('email_provider_name')} account is connected</p>
+                      <Button
+                        variant="outline"
+                        className="mt-2 text-white border-white/20 hover:bg-white/10"
+                        onClick={fetchEmails}
+                        disabled={isFetchingEmails}
+                      >
+                        Refresh Emails
+                      </Button>
+                    </div>
+                    
+                    <div className="text-center mt-4">
+                      <p className="text-white/70 mb-4">Or analyze a single email</p>
+                      <Textarea
+                        className="min-h-[100px] resize-y bg-white/10 text-white border-white/20 focus:border-white placeholder:text-white/50 mb-4"
+                        placeholder="Paste email content here for AI analysis..."
+                        value={emailInput}
+                        onChange={(e) => setEmailInput(e.target.value)}
+                      />
+                      
+                      <Button 
+                        onClick={handleParseClick}
+                        className="hover-scale bg-white text-primary hover:bg-white/90"
+                        disabled={isLoading || !emailInput.trim()}
+                      >
+                        {isLoading ? "Analyzing with AI..." : "Analyze with AI"}
+                      </Button>
+                    </div>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -682,6 +762,16 @@ The Amazon.com Team`;
 };
 
 export default EmailParser;
+
+
+
+
+
+
+
+
+
+
 
 
 
