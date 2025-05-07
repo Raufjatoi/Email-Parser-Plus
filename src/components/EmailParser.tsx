@@ -577,7 +577,7 @@ The Amazon.com Team`;
                       <p className="text-white/90">Your {localStorage.getItem('email_provider_name')} account is connected</p>
                       <Button
                         variant="outline"
-                        className="mt-2 text-white border-white/20 hover:bg-white/10"
+                        className="mt-2 text-white border-white/20 bg-primary hover:bg-white/70"
                         onClick={fetchEmails}
                         disabled={isFetchingEmails}
                       >
@@ -626,7 +626,7 @@ The Amazon.com Team`;
           </Card>
         )}
         
-        {/* Advanced AI Results Section */}
+        {/* Advanced AI Results Section - Updated UI */}
         {parsedResult && isAdvancedMode && (
           <div className="space-y-4">
             {/* AI Analysis Results */}
@@ -638,16 +638,20 @@ The Amazon.com Team`;
                   <div className="space-y-6">
                     {/* Context Type */}
                     <div className="p-4 bg-white/10 rounded-lg">
-                      <h4 className="text-white font-medium mb-2 border-b border-white/20 pb-2">Contextual Email Type:</h4>
-                      <p className="text-white/90 text-lg">{aiAnalysisResult.contextualType}</p>
+                      <h4 className="text-white font-medium mb-2 border-b border-white/20 pb-2">Contextual Email Type</h4>
+                      <p className="text-white/90 text-lg">
+                        {aiAnalysisResult.contextualType.replace(/^\*\*|\*\*$|^""|""$|:/g, '').trim()}
+                      </p>
                     </div>
                     
                     {/* Key Insights */}
                     <div className="p-4 bg-white/10 rounded-lg">
-                      <h4 className="text-white font-medium mb-2 border-b border-white/20 pb-2">Key Insights:</h4>
+                      <h4 className="text-white font-medium mb-2 border-b border-white/20 pb-2">Key Insights</h4>
                       <ul className="list-disc pl-5 space-y-2 mt-3">
                         {aiAnalysisResult.keyInsights.map((insight: string, idx: number) => (
-                          <li key={idx} className="text-white/90">{insight}</li>
+                          <li key={idx} className="text-white/90">
+                            {insight.replace(/^\*\*|\*\*$|^""|""$|:/g, '').trim()}
+                          </li>
                         ))}
                       </ul>
                     </div>
@@ -655,35 +659,168 @@ The Amazon.com Team`;
                     {/* Sentiment and Urgency */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="p-4 bg-white/10 rounded-lg">
-                        <h4 className="text-white font-medium mb-2 border-b border-white/20 pb-2">Sentiment:</h4>
-                        <p className={`text-lg font-medium mt-3 ${
-                          aiAnalysisResult.sentimentAnalysis === "Positive" ? "text-green-300" :
-                          aiAnalysisResult.sentimentAnalysis === "Negative" ? "text-red-300" :
-                          aiAnalysisResult.sentimentAnalysis === "Urgent" ? "text-yellow-300" :
-                          "text-white/90"
-                        }`}>
-                          {aiAnalysisResult.sentimentAnalysis}
+                        <h4 className="text-white font-medium mb-2 border-b border-white/20 pb-2">Sentiment</h4>
+                        <div className="flex items-center mt-3">
+                          <div className={`w-3 h-3 rounded-full mr-2 ${
+                            aiAnalysisResult.sentimentAnalysis === "Positive" ? "bg-green-400" :
+                            aiAnalysisResult.sentimentAnalysis === "Negative" ? "bg-red-400" :
+                            aiAnalysisResult.sentimentAnalysis === "Urgent" ? "bg-yellow-400" :
+                            "bg-blue-400"
+                          }`}></div>
+                          <p className={`text-lg font-medium ${
+                            aiAnalysisResult.sentimentAnalysis === "Positive" ? "text-green-300" :
+                            aiAnalysisResult.sentimentAnalysis === "Negative" ? "text-red-300" :
+                            aiAnalysisResult.sentimentAnalysis === "Urgent" ? "text-yellow-300" :
+                            "text-white/90"
+                          }`}>
+                            {aiAnalysisResult.sentimentAnalysis.replace(/^\*\*|\*\*$|^""|""$|:/g, '').trim()}
+                          </p>
+                        </div>
+                        <p className="text-white/70 text-sm mt-2">
+                          {aiAnalysisResult.sentimentAnalysis === "Positive" ? "This email conveys positive information or good news." :
+                           aiAnalysisResult.sentimentAnalysis === "Negative" ? "This email contains negative information or concerns." :
+                           aiAnalysisResult.sentimentAnalysis === "Urgent" ? "This email requires immediate attention." :
+                           "This email is informational in nature."}
                         </p>
                       </div>
                       <div className="p-4 bg-white/10 rounded-lg">
-                        <h4 className="text-white font-medium mb-2 border-b border-white/20 pb-2">Urgency Level:</h4>
-                        <p className={`text-lg font-medium mt-3 ${
-                          aiAnalysisResult.urgencyLevel === "High" ? "text-red-300" :
-                          aiAnalysisResult.urgencyLevel === "Medium" ? "text-yellow-300" :
-                          "text-green-300"
-                        }`}>
-                          {aiAnalysisResult.urgencyLevel}
+                        <h4 className="text-white font-medium mb-2 border-b border-white/20 pb-2">Urgency Level</h4>
+                        <div className="mt-3">
+                          <div className="w-full bg-white/20 rounded-full h-2.5">
+                            <div className={`h-2.5 rounded-full ${
+                              aiAnalysisResult.urgencyLevel === "High" ? "bg-red-400 w-full" :
+                              aiAnalysisResult.urgencyLevel === "Medium" ? "bg-yellow-400 w-2/3" :
+                              "bg-green-400 w-1/3"
+                            }`}></div>
+                          </div>
+                          <p className={`text-lg font-medium mt-2 ${
+                            aiAnalysisResult.urgencyLevel === "High" ? "text-red-300" :
+                            aiAnalysisResult.urgencyLevel === "Medium" ? "text-yellow-300" :
+                            "text-green-300"
+                          }`}>
+                            {aiAnalysisResult.urgencyLevel.replace(/^\*\*|\*\*$|^""|""$|:/g, '').trim()}
+                          </p>
+                        </div>
+                        <p className="text-white/70 text-sm mt-2">
+                          {aiAnalysisResult.urgencyLevel === "High" ? "Requires immediate attention or action." :
+                           aiAnalysisResult.urgencyLevel === "Medium" ? "Should be addressed soon but not urgent." :
+                           "Can be handled at your convenience."}
                         </p>
                       </div>
                     </div>
                     
+                    {/* Shipping Journey Visualization - for shipping emails */}
+                    {aiAnalysisResult.contextualType.toLowerCase().includes('shipping') && (
+                      <div className="p-4 bg-white/10 rounded-lg">
+                        <h4 className="text-white font-medium mb-2 border-b border-white/20 pb-2">Shipping Journey</h4>
+                        <div className="mt-4">
+                          <div className="relative">
+                            {/* Shipping Timeline */}
+                            <div className="flex items-center justify-between mb-8">
+                              <div className="flex flex-col items-center">
+                                <div className="w-8 h-8 bg-green-400 rounded-full flex items-center justify-center">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                                </div>
+                                <p className="text-white/80 text-xs mt-2">Order Processed</p>
+                              </div>
+                              <div className="h-1 flex-1 bg-white/20 mx-2">
+                                <div className="h-1 bg-green-400 w-full"></div>
+                              </div>
+                              <div className="flex flex-col items-center">
+                                <div className="w-8 h-8 bg-green-400 rounded-full flex items-center justify-center">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                                </div>
+                                <p className="text-white/80 text-xs mt-2">Shipped</p>
+                              </div>
+                              <div className="h-1 flex-1 bg-white/20 mx-2">
+                                <div className="h-1 bg-green-400 w-1/3"></div>
+                              </div>
+                              <div className="flex flex-col items-center">
+                                <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                </div>
+                                <p className="text-white/80 text-xs mt-2">In Transit</p>
+                              </div>
+                              <div className="h-1 flex-1 bg-white/20 mx-2"></div>
+                              <div className="flex flex-col items-center">
+                                <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                                </div>
+                                <p className="text-white/80 text-xs mt-2">Delivered</p>
+                              </div>
+                            </div>
+                            
+                            {/* Shipping Details */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                              <div>
+                                <p className="text-white/70 text-sm">Carrier:</p>
+                                <p className="text-white font-medium">
+                                  {aiAnalysisResult.keyInsights.some((i: string) => i.toLowerCase().includes('ups')) ? 'UPS' : 
+                                   aiAnalysisResult.keyInsights.some((i: string) => i.toLowerCase().includes('fedex')) ? 'FedEx' :
+                                   aiAnalysisResult.keyInsights.some((i: string) => i.toLowerCase().includes('usps')) ? 'USPS' :
+                                   'Unknown Carrier'}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-white/70 text-sm">Tracking Number:</p>
+                                <p className="text-white font-medium">
+                                  {(() => {
+                                    // Extract tracking number from insights
+                                    const trackingPattern = /\b([A-Z0-9]{8,22})\b|\btracking\s+(?:number|#)?\s*:?\s*([A-Z0-9]{8,22})\b/i;
+                                    for (const insight of aiAnalysisResult.keyInsights) {
+                                      const match = insight.match(trackingPattern);
+                                      if (match) return match[1] || match[2];
+                                    }
+                                    return 'Not found';
+                                  })()}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-white/70 text-sm">Estimated Delivery:</p>
+                                <p className="text-white font-medium">
+                                  {(() => {
+                                    // Extract delivery date from insights
+                                    const datePattern = /\b(?:delivery|delivered|arrive|arrival|expected)(?:\s+(?:date|on|by))?\s*:?\s*([A-Za-z]+\s+\d{1,2}(?:st|nd|rd|th)?,?\s*\d{4}|\d{1,2}\/\d{1,2}\/\d{2,4}|\d{1,2}-\d{1,2}-\d{2,4})/i;
+                                    for (const insight of aiAnalysisResult.keyInsights) {
+                                      const match = insight.match(datePattern);
+                                      if (match) return match[1];
+                                    }
+                                    return 'Not specified';
+                                  })()}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-white/70 text-sm">Order Total:</p>
+                                <p className="text-white font-medium">
+                                  {(() => {
+                                    // Extract price from insights
+                                    const pricePattern = /\$\d+\.\d{2}|\$\d+(?:\.\d{2})?|\d+\.\d{2}\s*(?:USD|EUR|GBP)/i;
+                                    for (const insight of aiAnalysisResult.keyInsights) {
+                                      const match = insight.match(pricePattern);
+                                      if (match) return match[0];
+                                    }
+                                    return 'Not specified';
+                                  })()}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
                     {/* Suggested Actions */}
                     {aiAnalysisResult.suggestedActions && aiAnalysisResult.suggestedActions.length > 0 && (
                       <div className="p-4 bg-white/10 rounded-lg">
-                        <h4 className="text-white font-medium mb-2 border-b border-white/20 pb-2">Suggested Actions:</h4>
-                        <ul className="list-disc pl-5 space-y-2 mt-3">
+                        <h4 className="text-white font-medium mb-2 border-b border-white/20 pb-2">Suggested Actions</h4>
+                        <ul className="mt-3 space-y-2">
                           {aiAnalysisResult.suggestedActions.map((action: string, idx: number) => (
-                            <li key={idx} className="text-white/90">{action}</li>
+                            <li key={idx} className="flex items-center">
+                              <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center mr-3">
+                                <span className="text-white text-xs">{idx + 1}</span>
+                              </div>
+                              <span className="text-white/90">{action.replace(/^\*\*|\*\*$|^""|""$|:/g, '').trim()}</span>
+                            </li>
                           ))}
                         </ul>
                       </div>
@@ -693,12 +830,32 @@ The Amazon.com Team`;
                     {aiAnalysisResult.entityRecognition && Object.values(aiAnalysisResult.entityRecognition).some(arr => arr.length > 0) && (
                       <div className="p-4 bg-white/10 rounded-lg">
                         <h4 className="text-white font-medium mb-2 border-b border-white/20 pb-2">Entities Detected:</h4>
-                        <div className="space-y-3 mt-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
                           {Object.entries(aiAnalysisResult.entityRecognition).map(([entityType, entities]: [string, string[]]) => 
                             entities.length > 0 && (
                               <div key={entityType} className="mb-2">
-                                <h5 className="text-white/80 capitalize font-medium">{entityType}:</h5>
-                                <p className="text-white/90 pl-3">{entities.join(", ")}</p>
+                                <h5 className="text-white/80 capitalize font-medium flex items-center">
+                                  {entityType === 'people' && (
+                                    <svg className="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                  )}
+                                  {entityType === 'organizations' && (
+                                    <svg className="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                                  )}
+                                  {entityType === 'locations' && (
+                                    <svg className="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                  )}
+                                  {entityType === 'dates' && (
+                                    <svg className="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                  )}
+                                  {entityType}:
+                                </h5>
+                                <div className="flex flex-wrap gap-2 mt-1">
+                                  {entities.map((entity, idx) => (
+                                    <span key={idx} className="inline-block px-2 py-1 bg-white/10 rounded text-sm text-white/90">
+                                      {entity.replace(/^\*\*|\*\*$|^""|""$/g, '').trim()}
+                                    </span>
+                                  ))}
+                                </div>
                               </div>
                             )
                           )}
@@ -762,33 +919,3 @@ The Amazon.com Team`;
 };
 
 export default EmailParser;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
